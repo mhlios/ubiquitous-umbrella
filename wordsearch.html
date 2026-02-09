@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<title>Word Search - Κρήτη</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: #f5f5f5;
+  }
+  h1 { margin: 20px; }
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(12, 40px);
+    grid-gap: 2px;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  .cell {
+    width: 40px;
+    height: 40px;
+    background-color: white;
+    border: 1px solid #aaa;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    font-weight: bold;
+    font-size: 16px;
+  }
+  .selected {
+    background-color: #ffd54f;
+    color: black;
+  }
+  .found {
+    background-color: #4caf50;
+    color: white;
+  }
+  #words {
+    margin-bottom: 20px;
+  }
+  #hiddenWord {
+    font-size: 24px;
+    font-weight: bold;
+    color: #d32f2f;
+  }
+</style>
+</head>
+<body>
+
+<h1>Word Search - Κρήτη</h1>
+
+<div id="grid"></div>
+
+<div id="words">
+  <strong>Λέξεις να βρείτε:</strong> ΛΑΣΙΘΙ, ΚΡΗΤΗ, ΝΗΣΙ, ΓΑΤΑ, ΣΚΥΛΟΣ, ΜΕΓΑΛΟΝΗΣΣΟΣ, ΑΣΤΥΝΟΜΙΑ, ΚΑΛΟΚΑΙΡΙ, ΦΘΙΝΟΠΩΡΟ, ΗΛΙΟΘΕΡΜΟ, ΦΑΝΤΑΣΤΙΚΑ, ΣΗΜΑΙΑ, ΠΟΛΙΤΙΣΜΟΣ, ΝΤΕΛΙΚΑΝΗΣ
+</div>
+
+<div id="hiddenWord">
+  Μυστική λέξη: <span id="mystery">???</span>
+</div>
+
+<script>
+// Πλέγμα γραμμάτων (12x12)
+const letters = [
+["Λ","Α","Σ","Ι","Θ","Ι","Κ","Ρ","Η","Τ","Η","Π"],
+["Ν","Τ","Ε","Λ","Ι","Κ","Α","Ν","Η","Σ","Ο","Ρ"],
+["Η","Λ","Ι","Ο","Θ","Ε","Ρ","Μ","Ο","Π","Ε","Ο"],
+["Γ","Α","Τ","Α","Μ","Ε","Γ","Α","Λ","Ο","Ν","Δ"],
+["Σ","Κ","Υ","Λ","Ο","Σ","Ν","Η","Σ","Ι","Ι","Ε"],
+["Α","Σ","Τ","Υ","Ν","Ο","Μ","Ι","Α","Κ","Ο","Ι"],
+["Κ","Α","Λ","Ο","Κ","Α","Ι","Ρ","Ι","Ο","Π","Ο"],
+["Φ","Θ","Ι","Ν","Ο","Π","Ω","Ρ","Ο","Σ","Μ","Λ"],
+["Φ","Α","Ν","Τ","Α","Σ","Τ","Ι","Κ","Α","Ι","Ο"],
+["Σ","Η","Μ","Α","Ι","Α","Π","Ο","Λ","Ι","Τ","Ι"],
+["Π","Ο","Λ","Ι","Τ","Ι","Σ","Μ","Ο","Σ","Σ","Κ"],
+["Ο","Ρ","Ο","Π","Ε","Δ","Ι","Ο","X","X","X","X"]
+];
+
+// Λίστα λέξεων με συντεταγμένες για έλεγχο (για παράδειγμα)
+const wordList = [
+  "ΛΑΣΙΘΙ","ΚΡΗΤΗ","ΝΗΣΙ","ΓΑΤΑ","ΣΚΥΛΟΣ",
+  "ΜΕΓΑΛΟΝΗΣΣΟΣ","ΑΣΤΥΝΟΜΙΑ","ΚΑΛΟΚΑΙΡΙ","ΦΘΙΝΟΠΩΡΟ",
+  "ΗΛΙΟΘΕΡΜΟ","ΦΑΝΤΑΣΤΙΚΑ","ΣΗΜΑΙΑ","ΠΟΛΙΤΙΣΜΟΣ","ΝΤΕΛΙΚΑΝΗΣ"
+];
+
+const gridEl = document.getElementById('grid');
+let startCell = null;
+let selectedCells = [];
+
+// Δημιουργία grid
+for (let r=0; r<12; r++) {
+  for (let c=0; c<12; c++) {
+    let div = document.createElement('div');
+    div.className = 'cell';
+    div.dataset.row = r;
+    div.dataset.col = c;
+    div.textContent = letters[r][c];
+    div.addEventListener('mousedown', () => {
+      startCell = div;
+      selectedCells = [div];
+      div.classList.add('selected');
+    });
+    div.addEventListener('mouseenter', () => {
+      if(startCell && !selectedCells.includes(div)){
+        selectedCells.push(div);
+        div.classList.add('selected');
+      }
+    });
+    div.addEventListener('mouseup', checkSelection);
+    gridEl.appendChild(div);
+  }
+}
+
+document.addEventListener('mouseup', () => { startCell=null; selectedCells=[]; clearSelection(); });
+
+function clearSelection(){
+  selectedCells.forEach(c => c.classList.remove('selected'));
+}
+
+// Έλεγχος αν η επιλεγμένη λέξη υπάρχει
+function checkSelection(){
+  let word = selectedCells.map(c=>c.textContent).join('');
+  let reversed = word.split('').reverse().join('');
+  if(wordList.includes(word) || wordList.includes(reversed)){
+    selectedCells.forEach(c => { c.classList.remove('selected'); c.classList.add('found'); });
+    // Αφαιρούμε την λέξη από τη λίστα για να μην ξαναβρεθεί
+    let index = wordList.indexOf(word); if(index===-1) index = wordList.indexOf(reversed);
+    if(index!==-1) wordList.splice(index,1);
+    // Ελέγχουμε αν τελείωσαν οι λέξεις
+    if(wordList.length===0){
+      revealMystery();
+    }
+  }
+  clearSelection();
+  startCell=null;
+  selectedCells=[];
+}
+
+// Αποκάλυψη κρυμμένης λέξης
+function revealMystery(){
+  document.getElementById('mystery').textContent = 'ΟΡΟΠΕΔΙΟ';
+}
+</script>
+
+</body>
+</html>
